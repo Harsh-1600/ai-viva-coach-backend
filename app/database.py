@@ -108,6 +108,33 @@ def init_db() -> None:
                         conn.execute(text(f"ALTER TABLE session_reports ADD COLUMN {col_name} {col_type}"))
                         logger.info(f"Migrated session_reports table: added column {col_name}.")
 
+        # Seed default demo accounts if not present
+        with SessionLocal() as db_session:
+            from app.models import User
+            from app.security import hash_password
+            demo_student = db_session.query(User).filter(User.email == "testuser@viva.com").first()
+            if not demo_student:
+                demo_student = User(
+                    email="testuser@viva.com",
+                    name="Viva Candidate",
+                    hashed_password=hash_password("Password123!"),
+                    role="student",
+                    auth_provider="local"
+                )
+                db_session.add(demo_student)
+
+            demo_teacher = db_session.query(User).filter(User.email == "teacher@vivacoach.edu").first()
+            if not demo_teacher:
+                demo_teacher = User(
+                    email="teacher@vivacoach.edu",
+                    name="Prof. Albus Dumbledore",
+                    hashed_password=hash_password("Password123!"),
+                    role="teacher",
+                    auth_provider="local"
+                )
+                db_session.add(demo_teacher)
+            db_session.commit()
+
         logger.info("Database tables initialized successfully.")
     except Exception as exc:
         logger.error(f"Error during database initialization: {exc}")
